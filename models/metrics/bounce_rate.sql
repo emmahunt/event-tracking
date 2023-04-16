@@ -14,6 +14,9 @@ with session_agg as (
         session_id
         , session_start_date
     from session_agg
+
+    -- There are some sessions where the number of page views in a session is 0
+    -- The cases are not bounces, as they will have at least 1 ping or click event (or wouldn't appear in the dataset at all)
     where number_of_page_views_in_session = 1
         and number_of_page_pings_in_session = 0
         and number_of_link_clicks_in_session = 0
