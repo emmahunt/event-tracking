@@ -5,7 +5,7 @@ with dataset as (select * from {{ ref('sa_skillset_dataset') }})
     select 
         event_id
         , page_view_id
-        , session_id
+        , trim(session_id) as session_id
         , session_increment::int as session_increment
         , user_cookie
         , event_name
@@ -51,7 +51,15 @@ with dataset as (select * from {{ ref('sa_skillset_dataset') }})
 
 -- Deduplicate true duplicate rows of data
 , dedup as (
-    select *
+    select 
+        *
+
+        -- Some page views are split into multiple sessions if the user is inactive for more than 30 minutes
+        -- This column records an ordinal count of the number of sessions the page view is split into
+        , conditional_change_event(session_id) over (
+            partition by user_cookie, page_view_id 
+            order by device_created_timestamp asc
+        ) + 1 as page_view_session_ordinal
     from cast_cols
 
     -- Remove true duplicate events: those with the same event_id and all the same measure values
